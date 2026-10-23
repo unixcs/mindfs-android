@@ -1,0 +1,278 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Job-level so the Telegram step can gate on `env.X != ''` (the secrets context
+    # is not available in step `if` conditions).
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
+
+      - name: Set up Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
+
+      - name: Validate release tag
+        shell: bash
+        run: |
+          # Personal builds append a -fengx.N suffix, so accept both v1.2.3 and v1.2.3-fengx.4.
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-fengx\.[0-9]+)?$ ]]; then
+            echo "Release tag must use the form v1.2.3 or v1.2.3-fengx.4." >&2
+            exit 1
+          fi
+
+      - name: Check the app
+        run: ./gradlew :app:check --no-daemon
+
+      - name: Restore release signing key
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+        run: |
+          for value in "$KEYSTORE_BASE64" "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD"; do
+            if [[ -z "$value" ]]; then
+              echo "Android release-signing secrets are not configured." >&2
+              exit 1
+            fi
+          done
+
+          keystore="$RUNNER_TEMP/mindfs-release.jks"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          chmod 600 "$keystore"
+          {
+            printf 'storeFile=%s\n' "$keystore"
+            printf 'storePassword=%s\n' "$STORE_PASSWORD"
+            printf 'keyAlias=%s\n' "$KEY_ALIAS"
+            printf 'keyPassword=%s\n' "$KEY_PASSWORD"
+          } > keystore.properties
+          chmod 600 keystore.properties
+
+      - name: Build the signed APKs
+        run: ./gradlew :app:assembleModernRelease :app:assembleLegacyRelease --no-daemon
+
+      - name: Verify and package the APKs
+        id: package
+        shell: bash
+        run: |
+          modern_apk="app/build/outputs/apk/modern/release/app-modern-release.apk"
+          legacy_apk="app/build/outputs/apk/legacy/release/app-legacy-release.apk"
+          test -f "$modern_apk"
+          test -f "$legacy_apk"
+
+          apksigner=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          if [[ -z "$apksigner" ]]; then
+            echo "Android apksigner was not found." >&2
+            exit 1
+          fi
+          aapt="$(dirname "$apksigner")/aapt"
+          expected_version="${GITHUB_REF_NAME#v}"
+
+          release_dir="$RUNNER_TEMP/release"
+          mkdir -p "$release_dir"
+
+          package_apk() {
+            local source_apk="$1"
+            local expected_name="$2"
+            local release_apk="$3"
+
+            local signature_report
+            signature_report=$("$apksigner" verify --verbose --print-certs "$source_apk")
+            printf '%s\n' "$signature_report"
+            if ! grep -Fqx 'Verified using v2 scheme (APK Signature Scheme v2): true' <<< "$signature_report"; then
+              echo "$source_apk is not signed with APK Signature Scheme v2." >&2
+              exit 1
+            fi
+
+            local version_name
+            version_name=$(
+              "$aapt" dump badging "$source_apk" |
+                sed -n "s/^package:.*versionName='\([^']*\)'.*/\1/p"
+            )
+            if [[ "$version_name" != "$expected_name" ]]; then
+              echo "Expected version $expected_name, found $version_name in $source_apk." >&2
+              exit 1
+            fi
+
+            cp "$source_apk" "$release_apk"
+            (
+              cd "$release_dir"
+              sha256sum "$(basename "$release_apk")" > "$(basename "$release_apk").sha256"
+            )
+          }
+
+          modern_release="$release_dir/mindfs-android-$GITHUB_REF_NAME.apk"
+          legacy_release="$release_dir/mindfs-android-$GITHUB_REF_NAME-legacy.apk"
+          package_apk "$modern_apk" "$expected_version" "$modern_release"
+          package_apk "$legacy_apk" "$expected_version-legacy" "$legacy_release"
+
+          printf 'apk=%s\nchecksum=%s\nlegacy_apk=%s\nlegacy_checksum=%s\n' \
+            "$modern_release" "$modern_release.sha256" \
+            "$legacy_release" "$legacy_release.sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Remove signing material
+        if: always()
+        run: rm -f keystore.properties "$RUNNER_TEMP/mindfs-release.jks"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mindfs-android-${{ github.ref_name }}
+          path: |
+            ${{ steps.package.outputs.apk }}
+            ${{ steps.package.outputs.checksum }}
+            ${{ steps.package.outputs.legacy_apk }}
+            ${{ steps.package.outputs.legacy_checksum }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Prepare draft GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" \
+              --repo "$GITHUB_REPOSITORY" \
+              --verify-tag \
+              --draft \
+              --title "MindFS for Android $GITHUB_REF_NAME"
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --repo "$GITHUB_REPOSITORY" \
+              --verify-tag \
+              --draft \
+              --title "MindFS for Android $GITHUB_REF_NAME" \
+              --generate-notes
+          fi
+
+      - name: Upload GitHub Release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APK_PATH: ${{ steps.package.outputs.apk }}
+          CHECKSUM_PATH: ${{ steps.package.outputs.checksum }}
+          LEGACY_APK_PATH: ${{ steps.package.outputs.legacy_apk }}
+          LEGACY_CHECKSUM_PATH: ${{ steps.package.outputs.legacy_checksum }}
+        run: |
+          gh release upload "$GITHUB_REF_NAME" \
+            "$APK_PATH#Android 12+ APK" \
+            "$CHECKSUM_PATH#SHA-256 checksum (Android 12+)" \
+            "$LEGACY_APK_PATH#Android 9+ APK (legacy)" \
+            "$LEGACY_CHECKSUM_PATH#SHA-256 checksum (Android 9+)" \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release edit "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --draft=false \
+            --latest=false
+
+      - name: Select latest GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release_tags=""
+          for attempt in {1..13}; do
+            if release_tags=$(
+              gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+                --jq '.[] | select(.draft == false and .prerelease == false) | .tag_name'
+            ) && grep -Fqx "$GITHUB_REF_NAME" <<< "$release_tags"; then
+              break
+            fi
+            release_tags=""
+            if [[ "$attempt" -eq 13 ]]; then
+              echo "Published release $GITHUB_REF_NAME did not become visible through the API." >&2
+              exit 1
+            fi
+            sleep 5
+          done
+          latest_tag=$(
+            printf '%s\n' "$release_tags" |
+              grep -E '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-fengx\.[0-9]+)?$' |
+              sort -V |
+              tail -n 1
+          )
+          if [[ -z "$latest_tag" ]]; then
+            echo "No published semantic-version release was found." >&2
+            exit 1
+          fi
+          gh release edit "$latest_tag" \
+            --repo "$GITHUB_REPOSITORY" \
+            --latest
+
+      # Direct download links (not just the Release page) so a phone tap starts the
+      # download. Skipped silently when the Telegram secrets are not configured.
+      - name: Send the Release link to Telegram
+        if: env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME"
+          modern_url="$base/mindfs-android-$GITHUB_REF_NAME.apk"
+          legacy_url="$base/mindfs-android-$GITHUB_REF_NAME-legacy.apk"
+          page_url="https://github.com/$GITHUB_REPOSITORY/releases/tag/$GITHUB_REF_NAME"
+          modern_sha=$(cut -d' ' -f1 "${{ steps.package.outputs.checksum }}")
+          legacy_sha=$(cut -d' ' -f1 "${{ steps.package.outputs.legacy_checksum }}")
+
+          TG_TEXT=$(printf 'MindFS for Android %s\n\nAndroid 12+（现代版）\n%s\n\nAndroid 9+（兼容版）\n%s\n\nRelease 页\n%s\n\nSHA-256 现代版\n%s\nSHA-256 兼容版\n%s' \
+            "$GITHUB_REF_NAME" "$modern_url" "$legacy_url" "$page_url" "$modern_sha" "$legacy_sha")
+          export TG_TEXT
+
+          payload="$RUNNER_TEMP/telegram-payload.json"
+          config="$RUNNER_TEMP/telegram-curl.cfg"
+          cleanup() { rm -f "$payload" "$config"; }
+          trap cleanup EXIT
+          umask 077
+
+          # JSON body keeps the multi-line text intact; the token lives only in the
+          # 0600 curl config (never on a command line or in the payload).
+          python3 - "$payload" <<'PY'
+          import json, os, sys
+          with open(sys.argv[1], "w", encoding="utf-8") as fh:
+              json.dump({
+                  "chat_id": os.environ["TELEGRAM_CHAT_ID"],
+                  "text": os.environ["TG_TEXT"],
+                  "disable_web_page_preview": True,
+              }, fh, ensure_ascii=False)
+          PY
+          chmod 600 "$payload"
+          {
+            printf 'url = "https://api.telegram.org/bot%s/sendMessage"\n' "$TELEGRAM_BOT_TOKEN"
+            printf 'header = "Content-Type: application/json"\n'
+            printf 'silent\nshow-error\nfail\n'
+          } > "$config"
+          chmod 600 "$config"
+          curl --config "$config" --data-binary "@$payload" > /dev/null

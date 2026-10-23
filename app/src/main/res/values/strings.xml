@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MindFS</string>
+
+    <!-- Bottom tabs -->
+    <string name="tab_activity">Activity</string>
+    <string name="tab_chats">Chats</string>
+    <string name="tab_projects">Projects</string>
+    <string name="tab_tasks">Tasks</string>
+    <string name="tab_settings">Me</string>
+
+    <!-- Common -->
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_test">Test</string>
+    <string name="action_done">Done</string>
+    <string name="action_check_all">Check all</string>
+    <string name="action_back">Back</string>
+
+    <!-- Node bar -->
+    <string name="node_bar_no_node">No node added yet</string>
+    <string name="node_bar_checking">Checking…</string>
+    <string name="node_bar_online">Online · %1$d ms</string>
+    <string name="node_bar_offline">Offline</string>
+
+    <!-- Placeholder screens (feature batches land in v112–v114) -->
+    <string name="placeholder_chats_title">Sessions arrive in v112</string>
+    <string name="placeholder_chats_body">Streaming conversations with your agents are the next batch: session list, optimistic send, resumable stream.</string>
+    <string name="placeholder_activity_title">Activity arrives in v113</string>
+    <string name="placeholder_activity_body">A single timeline of what all agents on all nodes are doing, plus notifications with quick replies.</string>
+    <string name="placeholder_tasks_title">Tasks arrive in v114</string>
+    <string name="placeholder_tasks_body">The kanban board, files and the floating ball join in v114.</string>
+
+    <!-- Projects (live data in v110) -->
+    <string name="projects_title">Projects</string>
+    <string name="projects_empty">The selected node has no roots yet.</string>
+    <string name="projects_no_node">Add a node in “Me → Nodes” first.</string>
+    <string name="projects_load_failed">Loading roots failed: %1$s</string>
+    <string name="projects_git_repo">git</string>
+
+    <!-- Nodes -->
+    <string name="nodes_title">Nodes</string>
+    <string name="nodes_empty_body">Add a MindFS node to get started. Example: http://100.118.126.86:7331</string>
+    <string name="nodes_add">Add node</string>
+    <string name="nodes_add_name">Name</string>
+    <string name="nodes_add_name_hint">e.g. Dell</string>
+    <string name="nodes_add_url">Base URL</string>
+    <string name="nodes_add_url_hint">http://host:7331</string>
+    <string name="nodes_cleartext_warning">This address is plain HTTP. Anyone on the network path can read your traffic. Continue only for trusted LAN/Tailscale networks.</string>
+    <string name="nodes_cleartext_confirm">I understand, use plain HTTP</string>
+    <string name="nodes_delete_confirm">Delete node “%1$s”? Stored settings for it are removed too.</string>
+    <string name="nodes_selected">Selected</string>
+    <string name="nodes_select">Use</string>
+    <string name="nodes_edit">Edit</string>
+    <string name="nodes_test_ok">OK · %1$d ms</string>
+    <string name="nodes_test_failed">Failed: %1$s</string>
+    <string name="nodes_error_url">Enter a valid http(s) URL</string>
+    <string name="nodes_error_name">Enter a name</string>
+    <string name="nodes_error_duplicate">A node with this URL already exists</string>
+    <string name="nodes_aggregate_ok">%1$d of %2$d nodes online</string>
+
+    <!-- Settings -->
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">Follow system</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_start_tab">Start tab</string>
+    <string name="settings_section_nodes">Nodes</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_about_version">Version</string>
+    <string name="settings_about_source">Source code</string>
+    <string name="settings_about_disclaimer">Unofficial third-party client for the self-hosted MindFS gateway. Not affiliated with the MindFS project.</string>
+    <string name="settings_about_license">Apache License 2.0. Built on the codeg-android client foundations (Apache-2.0).</string>
+</resources>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_activity">动态</string>
+    <string name="tab_chats">会话</string>
+    <string name="tab_projects">项目</string>
+    <string name="tab_tasks">任务</string>
+    <string name="tab_settings">我的</string>
+
+    <string name="action_save">保存</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_delete">删除</string>
+    <string name="action_retry">重试</string>
+    <string name="action_test">测试</string>
+    <string name="action_done">完成</string>
+    <string name="action_check_all">全部测一遍</string>
+    <string name="action_back">返回</string>
+
+    <string name="node_bar_no_node">还没有节点</string>
+    <string name="node_bar_checking">检测中…</string>
+    <string name="node_bar_online">在线 · %1$d ms</string>
+    <string name="node_bar_offline">离线</string>
+
+    <string name="placeholder_chats_title">会话在 v112 到货</string>
+    <string name="placeholder_chats_body">和 agent 的流式对话是下一批：会话列表、乐观发送、断线续流。</string>
+    <string name="placeholder_activity_title">动态在 v113 到货</string>
+    <string name="placeholder_activity_body">把所有节点上所有 agent 在干什么汇成一条时间线，加上通知和快捷回复。</string>
+    <string name="placeholder_tasks_title">任务在 v114 到货</string>
+    <string name="placeholder_tasks_body">看板、文件和悬浮球在 v114 一起加入。</string>
+
+    <string name="projects_title">项目</string>
+    <string name="projects_empty">当前节点还没有工作目录。</string>
+    <string name="projects_no_node">先到「我的 → 节点管理」添加一个节点。</string>
+    <string name="projects_load_failed">目录加载失败：%1$s</string>
+    <string name="projects_git_repo">git</string>
+
+    <string name="nodes_title">节点管理</string>
+    <string name="nodes_empty_body">添加一个 MindFS 节点开始使用。例如：http://100.118.126.86:7331</string>
+    <string name="nodes_add">添加节点</string>
+    <string name="nodes_add_name">名称</string>
+    <string name="nodes_add_name_hint">例如：Dell</string>
+    <string name="nodes_add_url">地址</string>
+    <string name="nodes_add_url_hint">http://host:7331</string>
+    <string name="nodes_cleartext_warning">这个地址是明文 HTTP。网络路径上的任何人都能看到你的流量。只建议在可信的局域网 / Tailscale 内网使用。</string>
+    <string name="nodes_cleartext_confirm">我知道了，使用明文 HTTP</string>
+    <string name="nodes_delete_confirm">删除节点「%1$s」？它的本地设置也会一并移除。</string>
+    <string name="nodes_selected">当前使用</string>
+    <string name="nodes_select">使用</string>
+    <string name="nodes_edit">编辑</string>
+    <string name="nodes_test_ok">正常 · %1$d ms</string>
+    <string name="nodes_test_failed">失败：%1$s</string>
+    <string name="nodes_error_url">请输入合法的 http(s) 地址</string>
+    <string name="nodes_error_name">请输入名称</string>
+    <string name="nodes_error_duplicate">已有同地址的节点</string>
+    <string name="nodes_aggregate_ok">%1$d / %2$d 个节点在线</string>
+
+    <string name="settings_section_appearance">外观</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_theme_system">跟随系统</string>
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_theme_light">浅色</string>
+    <string name="settings_start_tab">启动页</string>
+    <string name="settings_section_nodes">节点</string>
+    <string name="settings_section_about">关于</string>
+    <string name="settings_about_version">版本</string>
+    <string name="settings_about_source">源码</string>
+    <string name="settings_about_disclaimer">这是自托管 MindFS 网关的非官方第三方客户端，与 MindFS 官方无隶属关系。</string>
+    <string name="settings_about_license">Apache License 2.0。构建在 codeg-android 客户端基础之上（Apache-2.0）。</string>
+</resources>

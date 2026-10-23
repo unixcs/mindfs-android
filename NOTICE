@@ -1,0 +1,15 @@
+MindFS for Android
+Copyright 2026 fengx
+
+This product includes software developed as part of the codeg-android project.
+
+The following stable client layers are adapted from codeg-android
+(https://github.com/spacering-net/codeg, Apache License 2.0, Copyright codeg
+contributors and fengx): the Gradle/CI release pipeline (dual modern/legacy
+flavors, signed-release verification, draft-release publishing), the
+Keystore-backed secret storage design, and UI/UX patterns of the streaming
+client. The Apache License 2.0 text shipped by that project is preserved in
+LICENSE-CODEG-BASE.
+
+This product is an independent client for the MindFS gateway. It contains no
+code or assets from the MindFS project, which is licensed under AGPL-3.0.

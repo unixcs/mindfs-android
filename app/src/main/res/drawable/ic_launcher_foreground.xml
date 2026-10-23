@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher glyph: a stylised "M" pulse on the brand-blue background, drawn in the
+     adaptive-icon safe zone (66/108 of the canvas). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="6.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M32,70 L32,38 L54,62 L76,38 L76,70" />
+    <path
+        android:fillColor="#FFBFDBFE"
+        android:pathData="M76,70 m-3.4,0 a3.4,3.4 0 1,1 6.8,0 a3.4,3.4 0 1,1 -6.8,0" />
+</vector>
